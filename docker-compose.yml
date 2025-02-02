@@ -1,0 +1,56 @@
+services:
+  api:
+    build:
+      context: ./
+    container_name: api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/var/www
+    depends_on:
+      - database
+      - searcher
+    networks:
+      - backend_network
+
+  controller:
+    image: nginx:alpine
+    container_name: controller
+    ports:
+      - "80:80"
+    volumes:
+      - ./backend/public:/usr/share/nginx/html
+    depends_on:
+      - api
+    networks:
+      - backend_network
+
+  database:
+    image: mysql:8
+    container_name: database
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: customers
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - backend_network
+
+  searcher:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.0
+    container_name: searcher
+    environment:
+      - discovery.type=single-node
+    ports:
+      - "9200:9200"
+    networks:
+      - backend_network
+
+networks:
+  backend_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
